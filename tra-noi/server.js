@@ -5,7 +5,7 @@ push.setVapidDetails('mailto:'+(process.env.VAPID_EMAIL||'gioco@example.com'),vk
 const app=express();app.use(express.static(__dirname+'/public'));app.get('/vapid',(q,r)=>r.json(vk.publicKey));
 const srv=http.createServer(app),wss=new WebSocketServer({server:srv}),admins=new Set();
 const DEF='Svuota il cestino\nRiordina i fogli sul tavolo\n*Scansiona il badge alla postazione\nCompleta il puzzle del cartellone';
-const G={ph:'lobby',cfg:{imp:2,per:4,hold:3,need:2,cool:60,mcool:30,tw:true,tasks:DEF},pl:{},alarm:false,holds:new Set(),meet:null,msg:'',win:null,last:0,lastM:0,t0:0,t1:0,timer:null};
+const G={ph:'lobby',cfg:{imp:2,per:4,hold:3,need:2,cool:60,mcool:30,nv:2,tw:true,tasks:DEF},pl:{},alarm:false,holds:new Set(),meet:null,msg:'',win:null,last:0,lastM:0,t0:0,t1:0,timer:null};
 const P=()=>Object.values(G.pl),sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const ok=(w,o)=>w&&w.readyState===1&&w.send(JSON.stringify(o));
 function notify(title,body,tag){P().forEach(p=>p.sub&&push.sendNotification(p.sub,JSON.stringify({title,body,tag}),{TTL:120,urgency:'high'}).catch(e=>{if(e.statusCode>=400&&e.statusCode<500)p.sub=null}))}
@@ -16,7 +16,7 @@ function pub(){const ps=P(),ct=ps.filter(x=>x.role==='c').flatMap(x=>x.tasks);
  roles:G.ph==='ended'?Object.fromEntries(ps.map(x=>[x.k,x.role])):null}}
 function bc(){const b=pub();
  P().forEach(p=>ok(p.ws,{...b,me:{k:p.k,n:p.n,role:p.role,a:p.alive,tasks:p.tasks,cd:Math.max(0,G.last+G.cfg.cool*1000-Date.now()),mcd:Math.max(0,G.lastM+G.cfg.mcool*1000-Date.now()),vote:G.meet&&G.meet[p.k]||null}}));
- const adm=P().map(x=>({k:x.k,n:x.n,role:x.role,a:x.alive,d:x.tasks.filter(t=>t.done).length,t:x.tasks.length}));
+ const adm=P().map(x=>({k:x.k,n:x.n,role:x.role,a:x.alive,d:x.tasks.filter(t=>t.done).length,t:x.tasks.length,v:x.tasks.some(t=>t.v)}));
  admins.forEach(w=>ok(w,{...b,adm,cfg:G.cfg}))}
 function clr(){G.alarm=false;G.holds.clear();clearTimeout(G.timer);G.timer=null}
 function check(){if(G.ph!=='playing'&&G.ph!=='meeting')return;
@@ -34,19 +34,21 @@ function endMeet(){const t={};Object.values(G.meet).forEach(v=>t[v]=(t[v]||0)+1)
 function start(){const ps=P();if(ps.length<3)return'Servono almeno 3 giocatori';
  const pool=G.cfg.tasks.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>s[0]==='*'?{t:s.slice(1).trim(),v:true}:{t:s,v:false});
  if(!pool.length)return'Aggiungi almeno una task';
- const ni=Math.max(1,Math.min(G.cfg.imp,Math.floor((ps.length-1)/2))),np=pool.filter(t=>!t.v);
- if(!np.length)return'Serve almeno una task non visibile per gli impostori';
+ const ni=Math.max(1,Math.min(G.cfg.imp,Math.floor((ps.length-1)/2))),np=pool.filter(t=>!t.v),vp=pool.filter(t=>t.v);
+ if(!np.length)return'Serve almeno una task non visibile';
+ if(G.cfg.nv&&!vp.length)return'Hai chiesto dei giocatori con task visibile ma non ce ne sono: metti un * davanti ad almeno una task oppure imposta 0';
  sh(ps.slice()).forEach((p,i)=>p.role=i<ni?'i':'c');
- const D={c:[],i:[]},PL={c:pool,i:np};
- ps.forEach(p=>{const r=p.role,pp=PL[r],per=Math.min(G.cfg.per,pp.length);p.alive=true;p.tasks=[];const have=new Set();
-  while(p.tasks.length<per){if(!D[r].length)D[r]=sh(pp.slice());const i=D[r].findIndex(t=>!have.has(t));
-   if(i<0){D[r]=sh(pp.slice());continue}
-   const t=D[r].splice(i,1)[0];have.add(t);p.tasks.push({...t,done:false})}});
+ const VS=new Set(sh(ps.filter(p=>p.role==='c')).slice(0,G.cfg.nv)),D={c:[],i:[],v:[]};
+ const draw=(k,src,have)=>{if(!D[k].length)D[k]=sh(src.slice());let i=D[k].findIndex(t=>!have.has(t));if(i<0){D[k]=sh(src.slice());i=D[k].findIndex(t=>!have.has(t))}const t=D[k].splice(i,1)[0];have.add(t);return{...t,done:false}};
+ ps.forEach(p=>{const have=new Set(),k=VS.has(p)?1:0,per=Math.min(G.cfg.per-k,np.length);p.alive=true;p.tasks=[];
+  if(k)p.tasks.push(draw('v',vp,have));
+  for(let x=0;x<per;x++)p.tasks.push(draw(p.role,np,have));
+  sh(p.tasks)});
  clr();G.meet=null;G.msg='';G.win=null;G.ph='playing';G.last=G.lastM=G.t0=Date.now();G.t1=0;
  notify('La partita è iniziata','Apri il gioco per vedere ruolo e task','start')}
 function adminCmd(d,err){const n=(v,a,b,f)=>{v=parseInt(v);return isNaN(v)?f:Math.min(b,Math.max(a,v))};
  if(d.t==='cfg'||d.t==='start'){
-  if(d.cfg){const c=d.cfg;G.cfg={imp:n(c.imp,1,10,2),per:n(c.per,1,15,4),hold:n(c.hold,1,30,3),need:n(c.need,2,10,2),cool:n(c.cool,0,600,60),mcool:n(c.mcool,0,600,30),tw:!!c.tw,tasks:String(c.tasks||'').slice(0,5000)}}
+  if(d.cfg){const c=d.cfg;G.cfg={imp:n(c.imp,1,10,2),per:n(c.per,1,15,4),hold:n(c.hold,1,30,3),need:n(c.need,2,10,2),cool:n(c.cool,0,600,60),mcool:n(c.mcool,0,600,30),nv:n(c.nv,0,20,2),tw:!!c.tw,tasks:String(c.tasks||'').slice(0,5000)}}
   if(d.t==='start'){if(G.ph==='playing'||G.ph==='meeting')return err('Partita già in corso');const e=start();if(e)return err(e)}}
  else if(d.t==='reset'){G.t0=G.t1=0;clr();G.ph='lobby';G.meet=null;G.msg='';G.win=null;P().forEach(p=>{p.role=null;p.alive=true;p.tasks=[]})}
  else if(d.t==='endmeet'&&G.ph==='meeting')endMeet();
