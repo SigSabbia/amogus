@@ -1,4 +1,4 @@
-# Tra noi, dal vivo
+# Amogus IRL
 
 Prova in locale: `npm install && npm start`, poi apri http://localhost:3000 (organizzatore: password `admin`).
 
