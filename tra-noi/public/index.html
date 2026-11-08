@@ -21,18 +21,18 @@ input[type=checkbox]{width:26px;height:26px;margin:0;flex:none}
 #hb{width:70vw;height:70vw;max-width:300px;max-height:300px;border-radius:50%;border:8px solid #fff;background:#ffffff22;color:#fff;font:inherit;font-size:24px;font-weight:800;touch-action:none}#hb.on{background:#fff;color:var(--rd)}
 #al .bar{width:70%;background:#0004}#al .bar i{background:#fff}
 @media (prefers-reduced-motion:reduce){#al{animation:none}}
-.tm{margin:0 0 10px;color:var(--mu);font-size:15px}.tm b{color:var(--tx);font-variant-numeric:tabular-nums}</style></head><body>
+.tm{margin:0 0 10px;color:var(--mu);font-size:15px}.tm b{color:var(--tx);font-variant-numeric:tabular-nums}.b.dd{background:#4a1520;color:#ff8a98;text-decoration:line-through}.b.dd:disabled{opacity:.85}.t input:disabled{opacity:.35}</style></head><body>
 <div id="app"></div>
 <div id="al" hidden><h1>ALLARME!</h1><p>Un impostore ha sabotato tutto. Tieni premuto insieme ad altri civili.</p><button id="hb">TIENI PREMUTO</button><p id="hn"></p><div class="bar"><i id="hp"></i></div></div>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let S=null,ws,me=localStorage.n||'',adm=localStorage.p||'',rv=0,toast='',cdEnd=0,mcEnd=0,t0=0,ai=0,au=0,hd=0;
+let S=null,ws,me=localStorage.n||'',adm=localStorage.p||'',rv=0,toast='',cdEnd=0,mcEnd=0,kEnd=0,mEnd=0,kl=0,t0=0,ai=0,au=0,hd=0;
 const tx=o=>ws&&ws.readyState===1&&ws.send(JSON.stringify(o));
 function conn(){ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
  ws.onopen=()=>{if(adm)tx({t:'admin',pw:adm});else if(me){tx({t:'join',name:me});if(window.Notification&&Notification.permission==='granted')sub()}};
  ws.onmessage=e=>{const d=JSON.parse(e.data);
   if(d.e){toast=d.e;setTimeout(()=>{toast='';render()},4000);if(d.lo){me=adm='';localStorage.clear();S=null}}
-  else{const pv=S&&S.ph;S=d;if(d.el!=null)t0=Date.now()-d.el;if(d.me){cdEnd=Date.now()+d.me.cd;mcEnd=Date.now()+d.me.mcd;[d.me.cd,d.me.mcd].forEach(x=>x&&setTimeout(render,x+100));if(pv&&pv!=='meeting'&&d.ph==='meeting'){mt.currentTime=0;mt.play().catch(()=>{});navigator.vibrate&&navigator.vibrate([300,100,300])}}}
+  else{const pv=S&&S.ph;S=d;if(d.ph!=='playing')kl=0;if(d.el!=null)t0=Date.now()-d.el;if(d.mr!=null)mEnd=Date.now()+d.mr;if(d.me){cdEnd=Date.now()+d.me.cd;mcEnd=Date.now()+d.me.mcd;kEnd=Date.now()+d.me.kcd;[d.me.cd,d.me.mcd,d.me.kcd].forEach(x=>x&&setTimeout(render,x+100));if(pv&&pv!=='meeting'&&d.ph==='meeting'){mt.currentTime=0;mt.play().catch(()=>{});navigator.vibrate&&navigator.vibrate([300,100,300])}}}
   render();alarmUI()};
  ws.onclose=()=>setTimeout(conn,1500)}
 setInterval(()=>tx({t:'ping'}),25000);
@@ -51,27 +51,29 @@ function unlock(){if(au)return;if(navigator.audioSession)navigator.audioSession.
  kp.play().then(()=>{au=1;render();if(navigator.mediaSession){navigator.mediaSession.metadata=new MediaMetadata({title:'Amogus IRL',artist:'Partita in corso'});['play','pause'].forEach(x=>{try{navigator.mediaSession.setActionHandler(x,()=>kp.play())}catch(e){}})}}).catch(()=>{})}
 document.addEventListener('click',unlock);
 const fmt=()=>{let s=Math.floor(((S.ph==='playing'||S.ph==='meeting')?Date.now()-t0:S.el)/1000);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),p=n=>String(n).padStart(2,'0');s%=60;return(h?h+':':'')+p(m)+':'+p(s)};
+const mf=()=>{const s=Math.max(0,Math.ceil((mEnd-Date.now())/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const kpan=()=>{const m=S.me;return'<div class=c><b>Chi uccidi?</b>'+S.pl.filter(p=>p.a&&p.k!==m.k&&!m.mates.includes(p.k)).map(p=>`<button class="b g" data-a=kill data-k="${p.k}">${esc(p.n)}</button>`).join('')+'<button class=s data-a=kx>Annulla</button></div>'};
 const tmr=()=>S.el!=null?'<p class=tm>Tempo di gioco <b id=tm>'+fmt()+'</b></p>':'';
-setInterval(()=>{const e=$('#tm');if(e&&S&&S.el!=null)e.textContent=fmt()},1000);
+setInterval(()=>{const e=$('#tm');if(e&&S&&S.el!=null)e.textContent=fmt();const c=$('#mc');if(c&&S&&S.mr!=null)c.textContent=mf()},1000);
 const login=()=>`<h1>Amogus IRL</h1><div class=c><input id=nm placeholder="Il tuo nickname" maxlength=20 value="${esc(me)}"><button class=b data-a=join>Entra in partita</button></div><div class=c><input id=pw type=password placeholder="Password organizzatore"><button class="b g" data-a=admin>Accedi come organizzatore</button></div>`;
 const nb=()=>!window.Notification?'<div class=c>Per ricevere gli allarmi a schermo spento su iPhone: tocca Condividi, poi Aggiungi alla schermata Home, e apri il gioco da lì.</div>':Notification.permission!=='granted'?'<button class="b g" data-a=nt>Attiva le notifiche degli allarmi</button>':'';
 const lobby=()=>`<h1>Amogus IRL</h1>${nb()}${ab()}<div class=c><h3>In attesa dell'organizzatore (${S.pl.length})</h3>${S.pl.map(p=>`<div class=r><span>${p.on?'🟢':'⚪'} ${esc(p.n)}</span></div>`).join('')}</div>`;
 function game(){const m=S.me,i=m.role==='i';return tmr()+(S.msg?`<div class=c>${esc(S.msg)}</div>`:'')+nb()+ab()+
-`<div class=c><b>${esc(m.n)}</b>${m.a?'':' · eliminato'}<button class="b g" style="margin:10px 0 0" data-a=rv>${rv?(i?'Sei un IMPOSTORE':'Sei un CIVILE'):'Mostra il mio ruolo'}</button></div><div class=c>Task dei civili completate: ${S.prog}%<div class=bar><i style="width:${S.prog}%;transition:width .4s"></i></div></div>`+
-m.tasks.map((t,x)=>`<label class=t><input type=checkbox data-a=tk data-i=${x}${t.done?' checked':''}><span>${esc(t.t)}${t.v?'<span class=ey>👁</span>':''}</span></label>`).join('')+'<p class=lg>👁 Task visibile: gli altri giocatori possono vederti mentre la svolgi.</p>'+
-(m.a?`<button class=b style="margin-top:12px" data-a=meet${mcEnd>Date.now()?' disabled':''}>Convoca riunione</button>${i?`<button class="b rd" data-a=alarm${cdEnd>Date.now()?' disabled':''}>Attiva allarme</button>`:''}<button class="b g" data-a=die>Sono stato eliminato</button>`:'')}
-function meet(){const m=S.me,c=m.a;return tmr()+`<h1>Riunione</h1><p>${c?'Vota chi eliminare. I voti sono segreti e il ruolo dell\'eliminato non viene rivelato.':'Sei eliminato: puoi solo osservare.'}</p>`+
-S.pl.filter(p=>p.a).map(p=>`<button class="b g${m.vote===p.k?' sel':''}" data-a=vote data-k="${p.k}"${c&&p.k!==m.k?'':' disabled'}>${esc(p.n)}${p.v?' ✓':''}</button>`).join('')+
-`<button class="b g${m.vote==='skip'?' sel':''}" data-a=vote data-k=skip${c?'':' disabled'}>Salta il voto</button>`}
+`<div class=c><b>${esc(m.n)}</b>${m.a?'':' · eliminato'}<button class="b g" style="margin:10px 0 0" data-a=rv>${rv?(i?'Sei un IMPOSTORE':'Sei un CIVILE'):'Mostra il mio ruolo'}</button>${rv&&i?`<p style="margin:8px 0 0">${m.mates.length?'Compagni: '+m.mates.map(k=>esc((S.pl.find(p=>p.k===k)||{}).n||k)).join(', '):'Sei l’unico impostore'}</p>`:''}</div><div class=c>Task dei civili completate: ${S.prog}%<div class=bar><i style="width:${S.prog}%;transition:width .4s"></i></div></div>`+
+m.tasks.map((t,x)=>`<label class=t><input type=checkbox data-a=tk data-i=${x}${t.done?' checked':''}${(t.done?m.tasks.slice(x+1).some(u=>u.done):!m.tasks.slice(0,x).every(u=>u.done))?' disabled':''}><span>${esc(t.t)}${t.v?'<span class=ey>👁</span>':''}</span></label>`).join('')+'<p class=lg>👁 Task visibile: gli altri giocatori possono vederti mentre la svolgi.<br>Le task vanno spuntate in ordine.</p>'+
+(m.a?`<button class=b style="margin-top:12px" data-a=meet${mcEnd>Date.now()?' disabled':''}>Convoca riunione</button>${i?`<button class="b rd" data-a=alarm${cdEnd>Date.now()?' disabled':''}>Attiva allarme</button><button class="b rd" data-a=kl${kEnd>Date.now()?' disabled':''}>Uccidi</button>${kl?kpan():''}`:''}<button class="b g" data-a=die>Sono stato eliminato</button>`:'')}
+function meet(){const m=S.me,c=m.a;return tmr()+`<h1>Riunione</h1>${S.mr!=null?'<p class=tm>Tempo per votare <b id=mc>'+mf()+'</b></p>':''}<p>${c?'Vota chi eliminare. I voti sono segreti e il ruolo dell’eliminato non viene rivelato.':'Sei eliminato: puoi solo osservare.'}</p>`+
+S.pl.map(p=>`<button class="b g${m.vote===p.k?' sel':''}${p.a?'':' dd'}" data-a=vote data-k="${p.k}"${c&&p.a&&p.k!==m.k?'':' disabled'}>${esc(p.n)}${p.a?(p.v?' ✓':''):' ✝'}</button>`).join('')+
+`<button class="b g${m.vote==='skip'?' sel':''}" data-a=vote data-k=skip${c?'':' disabled'}>Salta il voto</button>`+(c?'<button class="b rd" data-a=die>Sono stato eliminato</button>':'')}
 const end=()=>tmr()+`<h1>${S.win==='c'?'Vincono i civili':'Vincono gli impostori'}</h1><div class=c>${S.pl.map(p=>`<div class=r><span>${S.roles[p.k]==='i'?'🔪':'🧑‍🚀'} ${esc(p.n)}</span><small>${S.roles[p.k]==='i'?'impostore':'civile'}${p.a?'':' · eliminato'}</small></div>`).join('')}</div><p>L'organizzatore può avviare una nuova partita.</p>`;
 function admin(){const c=S.cfg,l=S.ph==='lobby'||S.ph==='ended',N=(id,t,v)=>`<label>${t}<input id=c_${id} type=number value=${v}></label>`;
  return tmr()+`<h1>Organizzatore</h1>${S.al!=null?'<div class="c rd">Allarme attivo</div>':''}${S.ph==='ended'?`<div class=c>${S.win==='c'?'Hanno vinto i civili':'Hanno vinto gli impostori'}</div>`:''}${S.msg&&S.ph!=='lobby'?`<div class=c>${esc(S.msg)}</div>`:''}`+
- (l?`<div class=c><h3>Configurazione</h3><div class=g2>${N('imp','Impostori',c.imp)}${N('per','Task a testa',c.per)}${N('hold','Secondi di pressione',c.hold)}${N('need','Civili che premono',c.need)}${N('cool','Pausa tra allarmi (s)',c.cool)}${N('mcool','Pausa tra riunioni (s)',c.mcool)}${N('nv','Giocatori con una task visibile',c.nv)}</div><label>Task: una per riga. Un * davanti la rende visibile (la ricevono solo civili, al massimo una a testa)<textarea id=c_tasks rows=8>${esc(c.tasks)}</textarea></label><label style="display:flex;gap:8px;align-items:center"><input type=checkbox id=c_tw${c.tw?' checked':''}> I civili vincono se tutte le loro task sono fatte</label><button class=b style="margin-top:12px" data-a=start>Avvia partita (${S.pl.length} giocatori)</button></div>`
+ (l?`<div class=c><h3>Configurazione</h3><div class=g2>${N('imp','Impostori',c.imp)}${N('per','Task a testa',c.per)}${N('hold','Secondi di pressione',c.hold)}${N('need','Civili che premono',c.need)}${N('cool','Pausa tra allarmi (s)',c.cool)}${N('mcool','Pausa tra riunioni (s)',c.mcool)}${N('nv','Giocatori con una task visibile',c.nv)}${N('kcool','Pausa tra uccisioni (s)',c.kcool)}${N('mtime','Durata riunione (s, 0 = illimitata)',c.mtime)}</div><label>Task: una per riga. Un * davanti la rende visibile (la ricevono solo civili, al massimo una a testa)<textarea id=c_tasks rows=8>${esc(c.tasks)}</textarea></label><label style="display:flex;gap:8px;align-items:center"><input type=checkbox id=c_tw${c.tw?' checked':''}> I civili vincono se tutte le loro task sono fatte</label><label style="display:flex;gap:8px;align-items:center"><input type=checkbox id=c_ar${c.ar?' checked':''}> Evita di rifare impostori quelli della partita precedente</label><button class=b style="margin-top:12px" data-a=start>Avvia partita (${S.pl.length} giocatori)</button></div>`
  :`${S.ph==='meeting'?'<button class=b data-a=end>Chiudi la votazione</button>':''}<button class="b g" data-a=reset>Azzera e torna alla lobby</button>`)+
  `<div class=c><h3>Giocatori</h3>${S.adm.map(p=>`<div class=r><span>${p.role==='i'?'🔪 ':p.role==='c'?'🧑‍🚀 ':''}${p.v?'👁 ':''}${esc(p.n)}${p.a?'':' ✝'}</span><small>${p.t?p.d+'/'+p.t:''}</small><button class=s data-a=tg data-k="${p.k}">${p.a?'Elimina':'Rianima'}</button><button class=s data-a=kk data-k="${p.k}">Espelli</button></div>`).join('')}</div>`}
 function render(){const a=document.activeElement;if(a&&/INPUT|TEXTAREA/.test(a.tagName)&&a.type!=='checkbox')return;
  $('#app').innerHTML=(toast?`<div class="c rd">${esc(toast)}</div>`:'')+(!S?login():S.adm?admin():!S.me?login():S.ph==='lobby'?lobby():S.ph==='ended'?end():S.ph==='meeting'?meet():game())}
-const cf=()=>({imp:$('#c_imp').value,per:$('#c_per').value,hold:$('#c_hold').value,need:$('#c_need').value,cool:$('#c_cool').value,mcool:$('#c_mcool').value,nv:$('#c_nv').value,tw:$('#c_tw').checked,tasks:$('#c_tasks').value});
+const cf=()=>({imp:$('#c_imp').value,per:$('#c_per').value,hold:$('#c_hold').value,need:$('#c_need').value,cool:$('#c_cool').value,mcool:$('#c_mcool').value,nv:$('#c_nv').value,kcool:$('#c_kcool').value,mtime:$('#c_mtime').value,tw:$('#c_tw').checked,ar:$('#c_ar').checked,tasks:$('#c_tasks').value});
 function h(e){const t=e.target.closest('[data-a]');if(!t)return;const a=t.dataset.a,k=t.dataset.k;if((e.type==='change')!==(a==='tk'))return;const f=()=>document.activeElement.blur();
  switch(a){
  case'join':me=$('#nm').value.trim();if(!me)return;localStorage.n=me;localStorage.removeItem('p');adm='';f();tx({t:'join',name:me});sub();wl();break;
@@ -81,7 +83,7 @@ function h(e){const t=e.target.closest('[data-a]');if(!t)return;const a=t.datase
  case'tk':tx({t:'tk',i:+t.dataset.i});break;
  case'meet':tx({t:'meet'});break;
  case'alarm':tx({t:'alarm'});break;
- case'die':confirm('Confermi di essere stato eliminato?')&&tx({t:'die'});break;
+ case'kl':kl=1;render();break;case'kx':kl=0;render();break;case'kill':kl=0;tx({t:'kill',to:k});break;case'die':confirm('Confermi di essere stato eliminato?')&&tx({t:'die'});break;
  case'vote':tx({t:'vote',to:k});break;
  case'start':tx({t:'start',cfg:cf()});break;
  case'end':tx({t:'endmeet'});break;
